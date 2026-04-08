@@ -551,24 +551,35 @@ if (existsSync(configFile)) {
   writeFileSync(configFile, JSON.stringify(defaultConfig, null, 2) + '\n');
 }
 
-if (config.apiKey) {
-  process.env.ANTHROPIC_API_KEY ??= config.apiKey;
+// When provider.json.apiKey is set, force-override so ~/.claude/settings.json
+// cannot shadow our provider config. OAuth users (no apiKey) keep ~/.claude
+// so subagents, skills, and MCP settings continue to work.
+const hasProviderApiKey = !!config.apiKey;
+
+if (hasProviderApiKey) {
+  process.env.ANTHROPIC_API_KEY = config.apiKey;
+  if (config.baseURL) process.env.ANTHROPIC_BASE_URL = config.baseURL;
+  if (config.model) process.env.ANTHROPIC_MODEL = config.model;
+  if (config.smallModel) process.env.ANTHROPIC_SMALL_FAST_MODEL = config.smallModel;
+  // Isolate from ~/.claude/settings.json — provider.json is the single source of truth
+  process.env.CLAUDE_CONFIG_DIR = clawgodDir;
+  // Hint for OpenAI-compatible endpoints (e.g. deepseek): disable auth header munging
+  if (config.baseURL && !/anthropic\.com/i.test(config.baseURL)) {
+    process.env.ANTHROPIC_AUTH_TOKEN ??= config.apiKey;
+  }
+} else {
+  // OAuth path: keep ??= so user env / settings.json still takes precedence
+  if (config.baseURL && config.baseURL !== defaultConfig.baseURL) {
+    process.env.ANTHROPIC_BASE_URL ??= config.baseURL;
+  }
+  process.env.CLAUDE_CONFIG_DIR ??= configDir;
 }
-if (config.baseURL && config.baseURL !== defaultConfig.baseURL) {
-  process.env.ANTHROPIC_BASE_URL ??= config.baseURL;
-}
-if (config.apiKey && config.model) {
-  process.env.ANTHROPIC_MODEL ??= config.model;
-}
-if (config.apiKey && config.smallModel) {
-  process.env.ANTHROPIC_SMALL_FAST_MODEL ??= config.smallModel;
-}
+
 if (config.timeoutMs) {
   process.env.API_TIMEOUT_MS ??= String(config.timeoutMs);
 }
 process.env.CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC ??= '1';
 process.env.DISABLE_INSTALLATION_CHECKS ??= '1';
-process.env.CLAUDE_CONFIG_DIR ??= configDir;
 
 const featuresFile = join(providerDir, 'features.json');
 if (!process.env.CLAUDE_INTERNAL_FC_OVERRIDES && existsSync(featuresFile)) {
@@ -662,6 +673,13 @@ const patches = [
     name: 'Voice Mode enable (bypass GrowthBook kill)',
     pattern: /function (\w+)\(\)\{return!\w+\("tengu_amber_quartz_disabled",!1\)\}/g,
     replacer: (m, fn) => `function ${fn}(){return!0}`,
+  },
+  {
+    // iG6(q){...let Y=Dq();if(Y!=="firstParty"&&Y!=="anthropicAws")return!1;return/^claude-(opus|sonnet)-4-6/.test(K)}
+    // Drop the firstParty/anthropicAws gate so third-party API users can use auto-mode
+    name: 'Auto-mode unlock for third-party API',
+    pattern: /let (\w+)=\w+\(\);if\(\1!=="firstParty"&&\1!=="anthropicAws"\)return!1;return\/\^claude-\(opus\|sonnet\)-4-6\/\.test\((\w+)\)/g,
+    replacer: (m, v, modelVar) => `return/^claude-(opus|sonnet)-4-/.test(${modelVar})`,
   },
   // ── 绿色主题 (patch 标识) ──
 
@@ -880,7 +898,15 @@ fi
 # ─── Replace claude command ───────────────────────────
 
 LAUNCHER_CONTENT="#!/bin/bash
-exec node \"$CLAWGOD_DIR/cli.js\" \"\$@\""
+# clawgod launcher
+CLAWGOD_CLI=\"$CLAWGOD_DIR/cli.js\"
+if [ ! -f \"\$CLAWGOD_CLI\" ]; then
+  echo \"clawgod: installation at $CLAWGOD_DIR is missing (cli.js not found)\" >&2
+  echo \"clawgod: reinstall via  curl -fsSL https://github.com/0Chencc/clawgod/releases/latest/download/install.sh | bash\" >&2
+  echo \"clawgod: or remove this launcher:  rm \\\"\$0\\\"\" >&2
+  exit 127
+fi
+exec node \"\$CLAWGOD_CLI\" \"\$@\""
 
 # Detect where claude is actually installed (supports native, npm, pnpm, yarn)
 CLAUDE_BIN=$(which claude 2>/dev/null)
