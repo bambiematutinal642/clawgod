@@ -617,6 +617,7 @@ const patches = [
     name: 'USER_TYPE → ant',
     pattern: /function (\w+)\(\)\{return"external"\}/g,
     replacer: (m, fn) => `function ${fn}(){return"ant"}`,
+    sentinel: 'return"external"',
   },
   {
     name: 'GrowthBook env overrides',
@@ -725,16 +726,19 @@ const patches = [
     name: 'Remove CYBER_RISK_INSTRUCTION',
     pattern: /(\w+)="IMPORTANT: Assist with authorized security testing[^"]*"/g,
     replacer: (m, varName) => `${varName}=""`,
+    sentinel: 'Assist with authorized security testing',
   },
   {
     name: 'Remove URL generation restriction',
     pattern: /\n\$\{\w+\}\nIMPORTANT: You must NEVER generate or guess URLs[^.]*\. You may use URLs provided by the user in their messages or local files\./g,
     replacer: () => '',
+    sentinel: 'IMPORTANT: You must NEVER generate or guess URLs',
   },
   {
     name: 'Remove cautious actions section',
     pattern: /function (\w+)\(\)\{return`# Executing actions with care\n\n[\s\S]*?`\}/g,
     replacer: (m, fn) => `function ${fn}(){return\`\`}`,
+    sentinel: '# Executing actions with care',
   },
   {
     name: 'Remove "Not logged in" notice',
@@ -746,14 +750,29 @@ const patches = [
   // ── 消息过滤 ──
 
   {
+    // v2.1.88-~v2.1.91: fn()!=="ant"){if(q.attachment.type==="hook_additional_context"...
+    // v2.1.92+        : fn()!=="ant"&&paY.has(q.attachment.type) — paY is an empty Set
+    //                    in v2.1.110, so this filter is effectively a no-op; patch anyway
+    //                    to guard against paY being populated in future versions.
     name: 'Attachment filter bypass',
-    pattern: /(\w+\(\)!=="ant"\)\{if\(\w+\.attachment\.type==="hook_additional_context")/g,
-    replacer: (m, orig) => m.replace(/\w+\(\)!=="ant"/, 'false'),
+    pattern: /(\w+)\(\)!=="ant"(&&\w+\.has\(\w+\.attachment\.type\)|\)\{if\(\w+\.attachment\.type==="hook_additional_context")/g,
+    replacer: (m) => m.replace(/(\w+)\(\)!=="ant"/, 'false'),
+    optional: true,  // filter may be removed entirely in future versions
   },
   {
-    name: 'Message list filter bypass',
+    // Legacy (≤v2.1.91) ternary form: fn()!=="ant"?tRY(_,sRY(K)):K
+    name: 'Message list filter bypass (legacy ternary)',
     pattern: /(\w+)\(\)!=="ant"\?(\w+)\((\w+),(\w+)\((\w+)\)\):(\w+)/g,
     replacer: (m, fn, tRY, underscore, sRY, K, fallback) => fallback,
+    optional: true,  // removed in v2.1.92+
+  },
+  {
+    // v2.1.92+ (s_8): if(fn()==="ant")return _;let z=...;return FaY(_,z)
+    // Flip the guard so non-ant users also return the pre-filtered list.
+    name: 'Message list filter bypass (s_8 form)',
+    pattern: /if\((\w+)\(\)==="ant"\)return (\w+);let (\w+)=(\w+) instanceof Set\?\4:(\w+)\(\4\);return (\w+)\(\2,\3\)/g,
+    replacer: (m, fn, ret) => `return ${ret}`,
+    optional: true,  // legacy versions had a ternary instead
   },
 ];
 
@@ -805,24 +824,37 @@ for (const p of patches) {
     relevant = relevant.length > p.selectIndex ? [relevant[p.selectIndex]] : [];
   }
 
-  // Uniqueness check
-  if (p.unique && relevant.length !== 1) {
-    if (verify) {
-      console.log(`  ❓ ${p.name} — ${relevant.length} matches (need exactly 1)`);
-    } else {
-      console.log(`  ⚠️  ${p.name} — ${relevant.length} matches, skipping (need 1)`);
-    }
-    if (relevant.length !== 1) { failed++; continue; }
+  // Uniqueness check — skip when 0 so the sentinel / already-applied
+  // fallthrough can handle it; only fail on >1 (ambiguous).
+  if (p.unique && relevant.length > 1) {
+    console.log(`  ⚠️  ${p.name} — ${relevant.length} matches, skipping (need 1)`);
+    failed++;
+    continue;
   }
 
   if (relevant.length === 0) {
     if (p.optional) {
       console.log(`  ⏭  ${p.name} (not present in this version)`);
       skipped++;
-    } else {
-      console.log(`  ✅ ${p.name} (already applied)`);
-      applied++;
+      continue;
     }
+    // If the patch declares a sentinel (a string that must NOT exist in a
+    // fully-patched file), use it to tell "already applied" apart from
+    // "regex is stale and silently missed the target".
+    if (p.sentinel !== undefined) {
+      const sentinels = Array.isArray(p.sentinel) ? p.sentinel : [p.sentinel];
+      const stillPresent = sentinels.filter((s) => code.includes(s));
+      if (stillPresent.length > 0) {
+        console.log(`  ❌ ${p.name} — regex stale, sentinel still in source: ${stillPresent.map((s) => JSON.stringify(s)).join(', ')}`);
+        failed++;
+        continue;
+      }
+      console.log(`  ✅ ${p.name} (already applied, sentinel absent)`);
+      applied++;
+      continue;
+    }
+    console.log(`  ⚠️  ${p.name} (0 matches, no sentinel — cannot verify)`);
+    skipped++;
     continue;
   }
 

@@ -626,6 +626,7 @@ const patches = [
     name: 'USER_TYPE → ant',
     pattern: /function (\w+)\(\)\{return"external"\}/g,
     replacer: (m, fn) => `function ${fn}(){return"ant"}`,
+    sentinel: 'return"external"',
   },
   {
     name: 'GrowthBook env overrides',
@@ -730,13 +731,21 @@ const patches = [
   },
   {
     name: 'Attachment filter bypass',
-    pattern: /(\w+\(\)!=="ant"\)\{if\(\w+\.attachment\.type==="hook_additional_context")/g,
-    replacer: (m, orig) => m.replace(/\w+\(\)!=="ant"/, 'false'),
+    pattern: /(\w+)\(\)!=="ant"(&&\w+\.has\(\w+\.attachment\.type\)|\)\{if\(\w+\.attachment\.type==="hook_additional_context")/g,
+    replacer: (m) => m.replace(/(\w+)\(\)!=="ant"/, 'false'),
+    optional: true,
   },
   {
-    name: 'Message list filter bypass',
+    name: 'Message list filter bypass (legacy ternary)',
     pattern: /(\w+)\(\)!=="ant"\?(\w+)\((\w+),(\w+)\((\w+)\)\):(\w+)/g,
     replacer: (m, fn, tRY, underscore, sRY, K, fallback) => fallback,
+    optional: true,
+  },
+  {
+    name: 'Message list filter bypass (s_8 form)',
+    pattern: /if\((\w+)\(\)==="ant"\)return (\w+);let (\w+)=(\w+) instanceof Set\?\4:(\w+)\(\4\);return (\w+)\(\2,\3\)/g,
+    replacer: (m, fn, ret) => `return ${ret}`,
+    optional: true,
   },
 ];
 
@@ -775,13 +784,22 @@ for (const p of patches) {
   let relevant = matches;
   if (p.validate) relevant = matches.filter(m => p.validate(m[0], code));
   if (p.selectIndex !== undefined) relevant = relevant.length > p.selectIndex ? [relevant[p.selectIndex]] : [];
-  if (p.unique && relevant.length !== 1) {
-    console.log(`  ?? ${p.name} — ${relevant.length} matches`);
+  if (p.unique && relevant.length > 1) {
+    console.log(`  ?? ${p.name} — ${relevant.length} matches (need 1)`);
     failed++; continue;
   }
   if (relevant.length === 0) {
-    if (p.optional) { console.log(`  >> ${p.name} (not in this version)`); skipped++; }
-    else { console.log(`  OK ${p.name} (already applied)`); applied++; }
+    if (p.optional) { console.log(`  >> ${p.name} (not in this version)`); skipped++; continue; }
+    if (p.sentinel !== undefined) {
+      const sentinels = Array.isArray(p.sentinel) ? p.sentinel : [p.sentinel];
+      const stillPresent = sentinels.filter((s) => code.includes(s));
+      if (stillPresent.length > 0) {
+        console.log(`  XX ${p.name} — regex stale, sentinel still present: ${stillPresent.map((s) => JSON.stringify(s)).join(', ')}`);
+        failed++; continue;
+      }
+      console.log(`  OK ${p.name} (already applied, sentinel absent)`); applied++; continue;
+    }
+    console.log(`  !! ${p.name} (0 matches, no sentinel)`); skipped++;
     continue;
   }
   if (verify) { console.log(`  -- ${p.name} — not yet applied`); skipped++; continue; }
